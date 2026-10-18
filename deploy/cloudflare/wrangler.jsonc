@@ -1,0 +1,25 @@
+{
+	"$schema": "./node_modules/wrangler/config-schema.json",
+	"name": "ledger-fava",
+	"main": "src/index.ts",
+	"upload_source_maps": true,
+	"compatibility_date": "2026-10-13",
+	"observability": { "enabled": true },
+	"containers": [
+		{
+			"class_name": "Fava",
+			"image": "./Dockerfile",
+			"image_build_context": "../..",
+			"max_instances": 1
+		}
+	],
+	"durable_objects": {
+		"bindings": [{ "name": "FAVA", "class_name": "Fava" }]
+	},
+	"exports": {
+		"Fava": { "type": "durable-object", "storage": "sqlite" }
+	},
+	// Set LEDGER_REPO to your ledger repository before deploying.
+	"vars": { "LEDGER_REPO": "<owner>/<repo>", "LEDGER_BRANCH": "master" },
+	"secrets": { "required": ["GITHUB_TOKEN"] }
+}

@@ -1,0 +1,74 @@
+{% set s = extension.statement() %}
+{% set ccy = s.currency %}
+
+{% macro amount(n) -%}
+<td class="num">{{ n|format_currency(ccy)|incognito }}</td>
+{%- endmacro %}
+
+<h2>Cash Flow</h2>
+<p>
+  Direct method, in {{ ccy }}{% if s.begin %}, {{ s.begin }} to {{ s.end }} (exclusive){% endif %}.
+  Cash is every account whose <code>open</code> carries <code>cf: "cash"</code>, credit cards included;
+  inflows are positive.
+  {# Relative: this page is extension/CashFlow/, the export extension/CashFlow/csv. #}
+  <a href="csv?{{ request.query_string.decode() }}">Export CSV</a>
+</p>
+
+<style>
+  .cash-flow tbody tr:nth-child(n) { background-color: transparent; }
+  .cash-flow tr.cf-section th, .cash-flow tr.cf-total th, .cash-flow tr.cf-total td {
+    text-align: left;
+    color: var(--table-header-text);
+    background-color: var(--table-header-background);
+  }
+  .cash-flow tr.cf-total td.num { text-align: right; }
+  .cash-flow tr.cf-parent td { font-weight: 500; }
+</style>
+
+<table class="queryresults cash-flow">
+  <thead>
+    <tr><th>Account</th><th class="num">{{ ccy }}</th></tr>
+  </thead>
+  <tbody>
+  {% for section in s.sections %}
+    <tr class="cf-section"><th colspan="2">{{ section.title }}</th></tr>
+    {% for node in section.tree.rows() %}
+    <tr{% if node.children %} class="cf-parent"{% endif %}>
+      <td style="padding-left:{{ node.depth * 1.2 }}em">
+        {% if node.account.startswith('(') %}{{ node.label }}
+        {% else %}<a href="{{ url_for('account', name=node.account) }}" title="{{ node.account }}">{{ node.label }}</a>{% endif %}
+      </td>
+      {{ amount(node.total) }}
+    </tr>
+    {% endfor %}
+    <tr class="cf-total"><th>Net cash from {{ section.title|lower }}</th>{{ amount(section.total) }}</tr>
+  {% endfor %}
+    <tr class="cf-total"><th>Net change in cash</th>{{ amount(s.net_flow) }}</tr>
+  {% if s.opening is not none %}
+    <tr><td>Cash at start</td>{{ amount(s.opening) }}</tr>
+    <tr><td>Effect of exchange rates</td>{{ amount(s.fx_effect) }}</tr>
+    <tr class="cf-total"><th>Cash at end</th>{{ amount(s.closing) }}</tr>
+  {% endif %}
+  </tbody>
+</table>
+
+{% if s.opening is none %}
+<p>A filter other than time is active, so the flows are a selection: opening and closing cash are not shown.</p>
+{% endif %}
+
+{% if s.problems %}
+<h3>Problems ({{ s.problems|length }})</h3>
+<table class="queryresults">
+  <thead><tr><th>Date</th><th>Narration</th><th>Source</th><th>Problem</th></tr></thead>
+  <tbody>
+  {% for p in s.problems %}
+    <tr>
+      <td>{{ p.entry.date if p.entry else '' }}</td>
+      <td>{{ p.entry.narration if p.entry else '' }}</td>
+      <td>{% if p.entry %}{{ p.entry.meta.filename.split('sub-ledgers/')[-1] }}:{{ p.entry.meta.lineno }}{% endif %}</td>
+      <td>{{ p.message }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endif %}

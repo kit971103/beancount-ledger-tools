@@ -1,0 +1,49 @@
+{% set show_zero = request.args.get('show_zero') == '1' %}
+{% set groups = extension.groups(show_zero=show_zero) %}
+
+{% macro amount_cells(amounts) -%}
+<td class="num">{% for c, n in amounts.items() if n > 0 %}{{ n|format_currency(c)|incognito }} {{ c }}<br>{% endfor %}</td>
+<td class="num">{% for c, n in amounts.items() if n < 0 %}{{ (-n)|format_currency(c)|incognito }} {{ c }}<br>{% endfor %}</td>
+{%- endmacro %}
+
+<h2>Trial Balance</h2>
+<p>
+  Accounts whose <code>open</code> carries <code>tb-group</code> metadata.
+  {% if show_zero %}
+  <a href="?{{ request.query_string.decode()|replace('show_zero=1', 'show_zero=0') }}">Hide zero balances</a>
+  {% else %}
+  <a href="?{{ request.query_string.decode() }}{{ '&' if request.query_string else '' }}show_zero=1">Show zero balances</a>
+  {% endif %}
+</p>
+
+{% if not groups %}
+<p>No account has <code>tb-group</code> metadata{% if not show_zero %} with a non-zero balance{% endif %}.</p>
+{% else %}
+{# fava stripes every other tbody row; with group rows in between, the same
+   account would land on a light row in one group and a dark one in the next.
+   Turn the stripes off and mark the group rows instead. #}
+<style>
+  .trial-balance tbody tr:nth-child(n) { background-color: transparent; }
+  .trial-balance tbody tr.tb-group th {
+    text-align: left;
+    color: var(--table-header-text);
+    background-color: var(--table-header-background);
+  }
+</style>
+<table class="queryresults trial-balance">
+  <thead>
+    <tr><th>Account</th><th class="num">Debit</th><th class="num">Credit</th></tr>
+  </thead>
+  <tbody>
+  {% for group in groups %}
+    <tr class="tb-group"><th colspan="3">{{ group.name }}</th></tr>
+    {% for row in group.rows %}
+    <tr>
+      <td style="padding-left:1.5em"><a href="{{ url_for('account', name=row.account) }}" title="{{ row.account }}">{{ row.label }}</a></td>
+      {{ amount_cells(row.amounts) }}
+    </tr>
+    {% endfor %}
+  {% endfor %}
+  </tbody>
+</table>
+{% endif %}

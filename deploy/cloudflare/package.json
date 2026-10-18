@@ -1,0 +1,14 @@
+{
+	"name": "ledger-fava",
+	"private": true,
+	"scripts": {
+		"deploy": "wrangler deploy",
+		"dev": "wrangler dev"
+	},
+	"dependencies": {
+		"@cloudflare/containers": "^0.2.0"
+	},
+	"devDependencies": {
+		"wrangler": "^4.0.0"
+	}
+}

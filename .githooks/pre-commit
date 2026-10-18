@@ -1,0 +1,6 @@
+#!/bin/sh
+# Refuse to commit anything about the private ledger (see scripts/check_public.py).
+# Enable once per clone: git config core.hooksPath .githooks
+files=$(git diff --cached --name-only --diff-filter=ACMR)
+[ -z "$files" ] && exit 0
+exec python scripts/check_public.py $files
