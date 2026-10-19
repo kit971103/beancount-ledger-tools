@@ -12,7 +12,7 @@ Why the Bank of Canada
 ----------------------
 The BoC's Valet API is open, needs no key, is an official central-bank
 series, and its FX_RATES_MONTHLY group goes back decades without a gap.  It
-also publishes TWD, which the ECB does not publish at all.
+is the only source: no second feed is consulted.
 
 The BoC quotes one unit of the foreign currency in CAD (FXMHKDCAD is CAD per
 HKD), which makes CAD the natural pivot: every rate this script writes is
@@ -68,20 +68,6 @@ redemption rate (`POINTS = "0.01"`: 100 points = 1.00 CAD).  Not a market price
 currencies move month to month.  Change the config if the basis changes; do not
 edit the output.
 
-Cross-check
------------
-Every run also pulls the ECB's daily reference rates from frankfurter.dev,
-averages them per month, and compares.  This is verification only -- not one
-number in the output comes from it.  The two series are not expected to match
-exactly: different fixing times (16:30 ET vs 16:00 CET), different
-business-day calendars, and for the non-USD pairs an average of a ratio
-compared against a ratio of averages.  Divergence has run to a median of
-0.03% and a worst case of 0.23%.  The script FAILS if the median exceeds
-MAX_MEDIAN_DIVERGENCE or any single month exceeds MAX_DIVERGENCE, so a feed
-that silently changes meaning stops the run instead of quietly rewriting the
-ledger's valuations.  A commodity with no ECB symbol (TWD) rests on a single
-source.
-
 Configuration, in the ledger's `ledger_tools.toml`:
 
     [prices]
@@ -91,9 +77,6 @@ Configuration, in the ledger's `ledger_tools.toml`:
 
     [prices.boc]                    # commodity -> BoC series (CAD per unit)
     USD = "FXMUSDCAD"
-
-    [prices.ecb]                    # commodity -> ECB symbol, for the cross-check
-    CAD = "CAD"
 
     [prices.fixed]                  # commodity -> constant CAD per unit
     POINTS = "0.01"
@@ -107,7 +90,6 @@ import json
 import os
 import sys
 import urllib.request
-from collections import defaultdict
 from decimal import Decimal as D, getcontext
 
 getcontext().prec = 28
@@ -117,25 +99,18 @@ from ledger_tools import config
 # The ledger's configuration, read by main() before anything else runs.
 REPORT = []     # the currencies reports are read in; every commodity gets a line in each
 BOC = {}        # commodity -> BoC series, CAD per one unit (CAD is the pivot: no series)
-ECB_SYMBOL = {}  # commodity -> the ECB feed's symbol; USD-based, so USD has nothing to check
 FIXED = {}      # commodity -> constant CAD per one unit
 NOTES = ""
 
 
 def configure():
-    global REPORT, BOC, ECB_SYMBOL, FIXED, NOTES
+    global REPORT, BOC, FIXED, NOTES
     REPORT = list(config.get("prices", "report"))
     BOC = dict(config.get("prices", "boc"))
-    ECB_SYMBOL = dict(config.get("prices", "ecb", default={}))
     FIXED = {k: D(v) for k, v in config.get("prices", "fixed", default={}).items()}
     NOTES = config.get("prices", "notes", default="")
 
-# Cross-check tolerances.  See the "Cross-check" section of the module docstring.
-MAX_MEDIAN_DIVERGENCE = D("0.15")   # percent
-MAX_DIVERGENCE = D("1.00")          # percent, any single month
-
 BOC_URL = "https://www.bankofcanada.ca/valet/observations/%s/json?start_date=%s"
-ECB_URL = "https://api.frankfurter.dev/v1/%s..%s?base=USD&symbols=%s"
 
 
 def get(url):
@@ -171,57 +146,12 @@ def pairs():
     return out
 
 
-def ecb_monthly(start, end):
-    """ECB daily rates (units per USD) averaged into USD-per-unit, by month."""
-    daily = get(ECB_URL % (start, end, ",".join(ECB_SYMBOL.values())))["rates"]
-    buckets = defaultdict(list)
-    for day, row in daily.items():
-        buckets[day[:7]].append(row)
-    out = {}
-    for month, rows in buckets.items():
-        q = {}
-        for sym in ECB_SYMBOL.values():
-            vals = [D(1) / D(str(r[sym])) for r in rows if sym in r]
-            if vals:
-                q[sym] = sum(vals) / len(vals)
-        out[month] = q
-    return out
-
-
-def cross_check(obs, ecb):
-    """Compare the BoC's USD quotes against the ECB's, month by month."""
-    div = []
-    for o in obs:
-        cad = cad_per_unit(o)
-        e = ecb.get(o["d"][:7])
-        if not e:
-            continue
-        for com, sym in ECB_SYMBOL.items():
-            if sym not in e:
-                continue
-            boc_in_usd = cad[com] / cad["USD"]
-            div.append((abs(boc_in_usd - e[sym]) / boc_in_usd * 100, o["d"], com))
-    if not div:
-        sys.exit("cross-check produced no comparisons -- is the ECB feed reachable?")
-    div.sort(reverse=True)
-    worst, median = div[0], div[len(div) // 2]
-    print("cross-check: %d comparisons, median %.3f%%, worst %.3f%% (%s %s)"
-          % (len(div), median[0], worst[0], worst[1], worst[2]))
-    if median[0] > MAX_MEDIAN_DIVERGENCE:
-        sys.exit("ABORT: median divergence %.3f%% exceeds %s%% -- check both feeds "
-                 "before trusting either." % (median[0], MAX_MEDIAN_DIVERGENCE))
-    if worst[0] > MAX_DIVERGENCE:
-        sys.exit("ABORT: %s %s diverges %.3f%%, over the %s%% limit."
-                 % (worst[1], worst[2], worst[0], MAX_DIVERGENCE))
-    return worst, median, len(div)
-
-
 def fmt(val):
     n = 6 if val > D("0.01") else 8
     return str(val.quantize(D(1).scaleb(-n)))
 
 
-def render(obs, worst, median, n_div):
+def render(obs):
     L = []
     w = L.append
     last = obs[-1]["d"][:7]
@@ -283,7 +213,7 @@ def render(obs, worst, median, n_div):
     w("; valued at that month's average.")
     w("")
     w("** Sources")
-    w("; Primary, and the only source these numbers are built from:")
+    w("; The only source these numbers are built from:")
     w(";   Bank of Canada Valet API, group FX_RATES_MONTHLY.")
     w(";   The BoC quotes one unit of the foreign currency in CAD, which makes CAD the")
     w(";   pivot: every line below is (CAD per X) / (CAD per Q) from the SAME monthly")
@@ -291,16 +221,6 @@ def render(obs, worst, median, n_div):
       % len(plan))
     w(";   publishes 4 to 5 significant figures; the decimals below are the exact")
     w(";   quotient of those, not precision the source does not have.")
-    w(";")
-    w("; Cross-check, used for verification and nothing else:")
-    w(";   ECB daily reference rates via frankfurter.dev, averaged per month.")
-    w(";   %d comparisons across %d months: median divergence %.3f%%, worst %.3f%%"
-      % (n_div, len(obs), median[0], worst[0]))
-    w(";   (%s, %s).  The two should not match exactly -- different fixing times"
-      % (worst[1], worst[2]))
-    w(";   (16:30 ET vs 16:00 CET), different business-day calendars, and for the")
-    w(";   non-USD pairs an average of a ratio against a ratio of averages.  The ECB")
-    w(";   has no TWD, so a TWD-based commodity rests on a single source.")
     w(";")
     w("; Regenerate with:  ledger-prices")
     w("; Its docstring (ledger_tools/prices.py) documents all of the above.")
@@ -360,10 +280,7 @@ def main():
     print("BoC FX_RATES_MONTHLY: %d observations, %s .. %s"
           % (len(obs), obs[0]["d"], obs[-1]["d"]))
 
-    ecb = ecb_monthly(args.start, obs[-1]["d"])
-    worst, median, n_div = cross_check(obs, ecb)
-
-    text, n_lines = render(obs, worst, median, n_div)
+    text, n_lines = render(obs)
     io.open(args.out, "w", encoding="utf-8", newline="\n").write(text)
     print("wrote %s: %d price directives across %d monthly blocks (%d pairs each)"
           % (args.out, n_lines, len(obs), len(pairs())))

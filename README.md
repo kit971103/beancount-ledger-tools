@@ -11,7 +11,7 @@ it is in that repository's `ledger_tools.toml` or in `main.beancount`.
 | `ledger_tools.fava_ext` | fava extensions: a grouped trial balance and a direct-method cash flow statement | `custom "fava-extension" "ledger_tools.fava_ext.<name>"` |
 | `ledger_tools.extract` | read-only extractors for Canadian bank/card statements, IBKR Flex exports and CRA notices; each proves its parse against the document's own figures — see [its README](src/ledger_tools/extract/README.md) | `[extract]` in `ledger_tools.toml` |
 | `ledger_tools.fetch` | `ledger-fetch`: you log in, Playwright replays recorded clicks to download exports | `[fetch.login]` |
-| `ledger_tools.prices` | `ledger-prices`: monthly Bank of Canada FX averages as `price` directives, cross-checked against the ECB | `[prices]` |
+| `ledger_tools.prices` | `ledger-prices`: monthly Bank of Canada FX averages as `price` directives | `[prices]` |
 | `deploy/cloudflare` | fava in a Cloudflare Container, behind Cloudflare Access | [its README](deploy/cloudflare/README.md) |
 
 ## Use from a ledger
