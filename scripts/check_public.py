@@ -32,6 +32,9 @@ BUILTIN = [
     ("long reference number", re.compile(r"(?<![\d.])\d{12,}(?![\d.])")),
 ]
 
+# checks a file skips: uv.lock's package hashes are long digit runs, not reference numbers
+EXEMPT = {"uv.lock": {"long reference number"}}
+
 
 def denylist(path):
     if not os.path.exists(path):
@@ -65,8 +68,11 @@ def main(argv):
                 lines = fh.read().splitlines()
         except (UnicodeDecodeError, FileNotFoundError, IsADirectoryError):
             continue
+        exempt = EXEMPT.get(os.path.relpath(f, HERE).replace(os.sep, "/"), set())
         for n, line in enumerate(lines, 1):
             for what, rx in checks:
+                if what in exempt:
+                    continue
                 m = rx.search(line)
                 if m:
                     hits += 1
