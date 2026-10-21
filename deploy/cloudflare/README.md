@@ -10,7 +10,7 @@ push. Documents (`documents/`, usually git-ignored) are not included.
 ## Local test
 
 ```sh
-docker build -f deploy/cloudflare/Dockerfile -t ledger-fava:local .   # from the repo root
+docker build -f deploy/container/Dockerfile -t ledger-fava:local .   # from the repo root
 docker run --rm -p 5000:5000 -v /path/to/ledger:/ledger:ro ledger-fava:local
 # or let it clone:
 docker run --rm -p 5000:5000 -e LEDGER_REPO=<owner>/<repo> -e GITHUB_TOKEN=... ledger-fava:local
