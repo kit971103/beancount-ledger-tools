@@ -1,5 +1,5 @@
 # fava + bean-check for one ledger, cloned from GitHub at start (see entrypoint.sh).
-# Build context is the repository root; deploy/cloudflare and deploy/gcp both build it.
+# Build context is the repository root (deploy/cloudflare/wrangler.jsonc builds it).
 FROM python:3.13-slim
 
 RUN apt-get update \
