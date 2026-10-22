@@ -3,8 +3,10 @@
 One Cloud Run service running `fava --read-only` on your ledger, behind
 Identity-Aware Proxy (IAP), sized for Google Cloud's free tier. The image is
 `deploy/container/` (shared with `deploy/cloudflare/`): it clones the ledger
-repository from GitHub when an instance starts, so a cold start serves the latest
-push. Cloud Run scales to zero when idle. Documents (`documents/`, usually
+repository from GitHub when an instance starts and re-fetches it every 5 minutes
+(`LEDGER_PULL_INTERVAL`); fava reloads on change. Cloud Run scales to zero when
+idle, and between requests it throttles the CPU, so the re-fetch runs while the
+service is in use; a cold start always serves the latest push. Documents (`documents/`, usually
 git-ignored) are not included.
 
 **fava has no login. The service is deployed with `--no-allow-unauthenticated
@@ -53,8 +55,12 @@ Needs `gcloud` (logged in: `gcloud auth login`) and Docker running locally.
 5. Open the URL in a private window: Google sign-in first, then fava. Another
    Google account must be refused.
 
-Re-run `deploy.sh` after changing this repository. A new push to the ledger
-needs nothing: the next cold start clones it.
+Re-run `deploy.sh` after changing this repository (a wrapper holding your
+variables can live beside it as `*.local.ps1`, which git ignores). A new push to the ledger
+needs nothing: it shows within 5 minutes of use, or at the next cold start.
+To serve it at once, start a new revision:
+`gcloud run services update ledger-fava --project=PROJECT_ID --region=us-west1
+--update-env-vars=REFRESHED_AT=$(date +%s)`.
 
 ## What it creates
 

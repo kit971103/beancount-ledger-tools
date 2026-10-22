@@ -4,3 +4,5 @@ __pycache__/
 dist/
 node_modules/
 .wrangler/
+# local deploy wrappers: they hold one ledger's project, repo and account
+*.local.ps1

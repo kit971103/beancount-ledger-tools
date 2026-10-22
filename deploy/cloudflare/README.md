@@ -2,8 +2,8 @@
 
 A Worker that forwards every request to one container running `fava --read-only`
 on your ledger. The container clones the ledger repository from GitHub when it
-starts and sleeps after 30 minutes idle, so each cold start serves the latest
-push. Documents (`documents/`, usually git-ignored) are not included.
+starts, re-fetches it every 5 minutes (`LEDGER_PULL_INTERVAL`), and sleeps after
+30 minutes idle. Documents (`documents/`, usually git-ignored) are not included.
 
 **fava has no login. Do not deploy without Cloudflare Access in front of it.**
 
