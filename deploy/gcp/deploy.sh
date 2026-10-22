@@ -66,7 +66,8 @@ gcloud iap web add-iam-policy-binding --member="user:$IAP_USER" \
 # A project outside a Google Cloud organization cannot use IAP's Google-managed
 # OAuth client (IAP answers 502 "Empty Google Account OAuth client ID(s)/secret(s)"),
 # so the service gets the custom client made in the console.
-IAP="--region=$REGION --resource-type=cloud-run --service=$SERVICE"
+# (gcloud iap settings ignores the configured project: --project must be given.)
+IAP="--project=$PROJECT_ID --region=$REGION --resource-type=cloud-run --service=$SERVICE"
 if [ -n "${OAUTH_CLIENT_ID:-}" ]; then
 	: "${OAUTH_CLIENT_SECRET:?set OAUTH_CLIENT_SECRET with OAUTH_CLIENT_ID}"
 	settings=$(mktemp) && trap 'rm -f "$settings"' EXIT
