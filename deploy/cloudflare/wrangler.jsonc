@@ -8,7 +8,7 @@
 	"containers": [
 		{
 			"class_name": "Fava",
-			"image": "./Dockerfile",
+			"image": "../container/Dockerfile",
 			"image_build_context": "../..",
 			"max_instances": 1
 		}

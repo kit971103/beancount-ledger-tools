@@ -27,7 +27,7 @@ Fava stays available beside it for the usual reports.
 
 ```
 user's container (docker compose, or Cloudflare Containers)
-├─ fava                  reports, read-only (exists: deploy/cloudflare/)
+├─ fava                  reports, read-only (exists: deploy/container/)
 ├─ agent service         Claude Agent SDK, user's own API key
 │   ├─ read tools        bean-query, bean-check, read ledger files
 │   ├─ write tools       edit files on a work branch only; commit; open a PR

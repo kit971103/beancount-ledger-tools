@@ -1,6 +1,6 @@
 // One fava instance for one ledger, behind Cloudflare Access (configured in the
 // dashboard -- fava itself has no login).  The container clones the ledger on
-// every cold start, so a new push shows up after the next sleep.
+// every cold start and re-fetches it every 5 minutes.
 import { Container, getContainer } from "@cloudflare/containers";
 
 interface Env {

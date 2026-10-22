@@ -2,15 +2,15 @@
 
 A Worker that forwards every request to one container running `fava --read-only`
 on your ledger. The container clones the ledger repository from GitHub when it
-starts and sleeps after 30 minutes idle, so each cold start serves the latest
-push. Documents (`documents/`, usually git-ignored) are not included.
+starts, re-fetches it every 5 minutes (`LEDGER_PULL_INTERVAL`), and sleeps after
+30 minutes idle. Documents (`documents/`, usually git-ignored) are not included.
 
 **fava has no login. Do not deploy without Cloudflare Access in front of it.**
 
 ## Local test
 
 ```sh
-docker build -f deploy/cloudflare/Dockerfile -t ledger-fava:local .   # from the repo root
+docker build -f deploy/container/Dockerfile -t ledger-fava:local .   # from the repo root
 docker run --rm -p 5000:5000 -v /path/to/ledger:/ledger:ro ledger-fava:local
 # or let it clone:
 docker run --rm -p 5000:5000 -e LEDGER_REPO=<owner>/<repo> -e GITHUB_TOKEN=... ledger-fava:local

@@ -12,6 +12,8 @@ it is in that repository's `ledger_tools.toml` or in `main.beancount`.
 | `ledger_tools.extract` | read-only extractors for Canadian bank/card statements, IBKR Flex exports and CRA notices; each proves its parse against the document's own figures — see [its README](src/ledger_tools/extract/README.md) | `[extract]` in `ledger_tools.toml` |
 | `ledger_tools.fetch` | `ledger-fetch`: you log in, Playwright replays recorded clicks to download exports | `[fetch.login]` |
 | `ledger_tools.prices` | `ledger-prices`: monthly Bank of Canada FX averages as `price` directives | `[prices]` |
+| `deploy/container` | the fava image both deployments build: clones the ledger from GitHub and re-fetches it every 5 minutes, runs `bean-check`, serves `fava --read-only` | `LEDGER_REPO`, `LEDGER_BRANCH`, `GITHUB_TOKEN`, `LEDGER_PULL_INTERVAL` |
+| `deploy/gcp` | fava on Cloud Run behind Identity-Aware Proxy, within the free tier | [its README](deploy/gcp/README.md) |
 | `deploy/cloudflare` | fava in a Cloudflare Container, behind Cloudflare Access | [its README](deploy/cloudflare/README.md) |
 
 ## Use from a ledger
