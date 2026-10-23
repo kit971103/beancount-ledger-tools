@@ -22,6 +22,16 @@ DEPLOYER_SA="$DEPLOYER@$PROJECT_ID.iam.gserviceaccount.com"
 # The numeric id, not the name: a deleted repository's name can be taken again.
 CI_REPO_ID="${CI_REPO_ID:-$(gh api "repos/$CI_REPO" --jq .id)}"
 
+# A new service account takes a while to be visible to other services' IAM.
+retry() {
+	for _ in 1 2 3 4 5 6; do
+		"$@" && return 0
+		echo "retrying in 10s" >&2
+		sleep 10
+	done
+	"$@"
+}
+
 gcloud config set project "$PROJECT_ID"
 gcloud services enable iamcredentials.googleapis.com sts.googleapis.com
 NUMBER=$(gcloud projects describe "$PROJECT_ID" --format='value(projectNumber)')
@@ -51,14 +61,14 @@ fi
 if ! gcloud iam service-accounts describe "$DEPLOYER_SA" >/dev/null 2>&1; then
 	gcloud iam service-accounts create "$DEPLOYER" --display-name="GitHub Actions deployer for $SERVICE"
 fi
-gcloud iam service-accounts add-iam-policy-binding "$DEPLOYER_SA" \
+retry gcloud iam service-accounts add-iam-policy-binding "$DEPLOYER_SA" \
 	--role=roles/iam.workloadIdentityUser \
 	--member="principalSet://iam.googleapis.com/projects/$NUMBER/locations/global/workloadIdentityPools/$POOL/attribute.repository_id/$CI_REPO_ID" >/dev/null
-gcloud artifacts repositories add-iam-policy-binding "$REPO" --location="$REGION" \
+retry gcloud artifacts repositories add-iam-policy-binding "$REPO" --location="$REGION" \
 	--member="serviceAccount:$DEPLOYER_SA" --role=roles/artifactregistry.writer >/dev/null
-gcloud run services add-iam-policy-binding "$SERVICE" --region="$REGION" \
+retry gcloud projects add-iam-policy-binding "$PROJECT_ID" --condition=None \
 	--member="serviceAccount:$DEPLOYER_SA" --role=roles/run.developer >/dev/null
-gcloud iam service-accounts add-iam-policy-binding "$SA" \
+retry gcloud iam service-accounts add-iam-policy-binding "$SA" \
 	--member="serviceAccount:$DEPLOYER_SA" --role=roles/iam.serviceAccountUser >/dev/null
 
 echo "Repository variables (Settings -> Secrets and variables -> Actions -> Variables):"
