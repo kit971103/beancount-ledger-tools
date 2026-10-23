@@ -12,7 +12,12 @@ COPY src ./src
 RUN pip install --no-cache-dir .
 
 COPY deploy/container/entrypoint.sh /usr/local/bin/entrypoint.sh
-RUN chmod +x /usr/local/bin/entrypoint.sh
+COPY deploy/container/ledger-pull.sh /usr/local/bin/ledger-pull
+RUN chmod +x /usr/local/bin/entrypoint.sh /usr/local/bin/ledger-pull
+
+# The image has no .git: the commit it was built from, for fava's Status page.
+ARG LEDGER_TOOLS_COMMIT=""
+ENV LEDGER_TOOLS_COMMIT=$LEDGER_TOOLS_COMMIT
 
 EXPOSE 5000
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]

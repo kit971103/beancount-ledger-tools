@@ -27,4 +27,6 @@ Needs a Workers Paid plan and Docker running locally (wrangler builds the image)
 4. In Cloudflare Zero Trust, add a self-hosted **Access application** for the
    Worker's hostname (workers.dev or a custom domain) with a policy allowing
    only your email. Check that an unauthenticated request is refused.
-5. `npx wrangler deploy`. The first deploy can take several minutes.
+5. `npx wrangler deploy --var LEDGER_TOOLS_COMMIT:$(git rev-parse HEAD)`. The
+   first deploy can take several minutes. (The image has no `.git`; the `--var`
+   is how fava's Status page learns which commit of this repository it runs.)

@@ -1,0 +1,33 @@
+{% set ledger_commit = extension.ledger_commit() %}
+{% set last_pull = extension.last_pull() %}
+
+<h2>Status</h2>
+
+<table class="queryresults">
+  <tbody>
+    <tr><th colspan="2">Ledger</th></tr>
+    {% if ledger_commit.error %}
+    <tr><td>Commit</td><td>{{ ledger_commit.error }}</td></tr>
+    {% else %}
+    <tr><td>Commit</td><td><code>{{ ledger_commit.hash }}</code></td></tr>
+    <tr><td>Committed</td><td>{{ ledger_commit.time }}</td></tr>
+    {% endif %}
+    <tr><th colspan="2">beancount-ledger-tools</th></tr>
+    <tr><td>Version</td><td>{{ extension.tools_version() }}</td></tr>
+    <tr><td>Commit</td><td><code>{{ extension.tools_commit() }}</code></td></tr>
+  </tbody>
+</table>
+
+{% if extension.can_pull() %}
+<p>
+  {# data-remote: a full page load, which fava's router would otherwise intercept.
+     Relative: this page is extension/Status/, the endpoint extension/Status/pull. #}
+  <a class="button" href="pull" data-remote>Pull ledger now</a>
+</p>
+{% if last_pull %}
+<p>Last pull, {{ last_pull.at }}: {{ 'OK' if last_pull.ok else 'failed' }}</p>
+<pre>{{ last_pull.message }}</pre>
+{% endif %}
+{% else %}
+<p>Pulling is available only in the container deployment (no <code>ledger-pull</code> or <code>$LEDGER_REPO</code> here).</p>
+{% endif %}

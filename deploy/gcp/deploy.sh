@@ -34,7 +34,8 @@ fi
 gcloud artifacts repositories set-cleanup-policies "$REPO" --location="$REGION" \
 	--policy="$HERE/cleanup-policy.json" --no-dry-run
 gcloud auth configure-docker "$REGION-docker.pkg.dev" --quiet
-docker build -f deploy/container/Dockerfile -t "$IMAGE" .
+COMMIT="$(git rev-parse HEAD)$(git diff --quiet HEAD -- || echo -dirty)"
+docker build -f deploy/container/Dockerfile -t "$IMAGE" 	--build-arg LEDGER_TOOLS_COMMIT="$COMMIT" .
 docker push "$IMAGE"
 
 # The service runs as its own account, which may read the token and nothing else.
