@@ -1,6 +1,6 @@
 # Build the fava image and roll it out to the Cloud Run service that
 # deploy/gcp/deploy.sh created; deploy/gcp/ci-setup.sh grants this workflow
-# access and prints the repository variables it reads.  Only the image changes:
+# access and prints the variables it reads from the `gcp-deployment` environment.  Only the image changes:
 # the service keeps its account, environment, secret and IAP settings.
 name: deploy-gcp
 
@@ -24,9 +24,10 @@ concurrency:
 
 jobs:
   deploy:
-    # Skipped in forks and until ci-setup.sh has been run.
-    if: vars.GCP_PROJECT_ID != '' && github.ref == 'refs/heads/main'
+    # Skipped in forks.  (The environment's variables are not yet visible here.)
+    if: github.event.repository.fork == false && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    environment: gcp-deployment # holds the variables ci-setup.sh prints
     env:
       PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
       REGION: ${{ vars.GCP_REGION || 'us-west1' }}

@@ -6,7 +6,7 @@
 #
 #   PROJECT_ID=my-project CI_REPO=<owner>/<repo> deploy/gcp/ci-setup.sh
 #
-# Prints the three repository variables the workflow reads.
+# Prints the variables the workflow reads from its gcp-deployment environment.
 set -eu
 
 : "${PROJECT_ID:?set PROJECT_ID}"
@@ -71,7 +71,7 @@ retry gcloud projects add-iam-policy-binding "$PROJECT_ID" --condition=None \
 retry gcloud iam service-accounts add-iam-policy-binding "$SA" \
 	--member="serviceAccount:$DEPLOYER_SA" --role=roles/iam.serviceAccountUser >/dev/null
 
-echo "Repository variables (Settings -> Secrets and variables -> Actions -> Variables):"
+echo "Variables of the gcp-deployment environment (Settings -> Environments):"
 echo "  GCP_PROJECT_ID=$PROJECT_ID"
 echo "  GCP_WIF_PROVIDER=projects/$NUMBER/locations/global/workloadIdentityPools/$POOL/providers/$PROVIDER"
 echo "  GCP_DEPLOY_SA=$DEPLOYER_SA"

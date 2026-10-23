@@ -80,10 +80,10 @@ It needs `gh` (logged in) to look up the repository's numeric id, or
 `CI_REPO_ID`. It makes a Workload Identity pool `github` whose provider accepts
 only this repository's pushes to `main` (forks, pull requests and other branches
 get nothing), and a service account `ledger-fava-deployer` the workflow becomes.
-Put the variables it prints under the repository's *Settings → Secrets and
-variables → Actions → Variables* (variables, not secrets: none is a credential,
-but they belong out of a public workflow file). Until `GCP_PROJECT_ID` is set the
-workflow is skipped.
+Put the variables it prints in an environment named `gcp-deployment`
+(*Settings → Environments*) as environment variables, not secrets: none is a
+credential, but they belong out of a public workflow file. Each run then shows
+as a deployment to that environment.
 
 ## What it creates
 
