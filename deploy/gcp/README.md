@@ -55,12 +55,35 @@ Needs `gcloud` (logged in: `gcloud auth login`) and Docker running locally.
 5. Open the URL in a private window: Google sign-in first, then fava. Another
    Google account must be refused.
 
-Re-run `deploy.sh` after changing this repository (a wrapper holding your
-variables can live beside it as `*.local.ps1`, which git ignores). A new push to the ledger
-needs nothing: it shows within 5 minutes of use, or at the next cold start.
-To serve it at once, start a new revision:
-`gcloud run services update ledger-fava --project=PROJECT_ID --region=us-west1
---update-env-vars=REFRESHED_AT=$(date +%s)`.
+Re-run `deploy.sh` after changing this repository, or let GitHub Actions do it
+(below). A wrapper holding your variables can live beside it as `*.local.ps1`,
+which git ignores. A new push to the ledger
+needs nothing: it shows within 5 minutes of use, or at the next cold start. To
+serve it at once, use *Pull ledger now* on the Status page (the
+`ledger_tools.fava_ext.status` extension).
+
+## Deploy from GitHub Actions
+
+`.github/workflows/deploy-gcp.yml` builds the image on every push to `main` that
+touches the image (`src/`, `pyproject.toml`, `deploy/container/`) and rolls it
+out; *Run workflow* does the same by hand. It changes only the image: the
+service's account, environment, secret and IAP settings stay as `deploy.sh` left
+them, so run `deploy.sh` once first and again whenever those change.
+
+The workflow holds no key. Once, after `deploy.sh`:
+
+```sh
+PROJECT_ID=my-project CI_REPO=<owner>/<this-repo> deploy/gcp/ci-setup.sh
+```
+
+It needs `gh` (logged in) to look up the repository's numeric id, or
+`CI_REPO_ID`. It makes a Workload Identity pool `github` whose provider accepts
+only this repository's pushes to `main` (forks, pull requests and other branches
+get nothing), and a service account `ledger-fava-deployer` the workflow becomes.
+Put the variables it prints under the repository's *Settings → Secrets and
+variables → Actions → Variables* (variables, not secrets: none is a credential,
+but they belong out of a public workflow file). Until `GCP_PROJECT_ID` is set the
+workflow is skipped.
 
 ## What it creates
 
@@ -72,6 +95,8 @@ To serve it at once, start a new revision:
 | Cloud Run service | `ledger-fava` | fava, port 5000, 512 MiB, one instance at most |
 | IAP settings | the service's OAuth client | Google sign-in for a project without an organization |
 | IAM bindings | IAP service agent: `run.invoker`; `IAP_USER`: `iap.httpsResourceAccessor` | IAP may call the service; only `IAP_USER` passes IAP |
+| Workload Identity pool and provider (`ci-setup.sh`) | `github` | GitHub's OIDC tokens, from this repository's `main` only |
+| service account (`ci-setup.sh`) | `ledger-fava-deployer` | the workflow: `artifactregistry.writer` on `ledger`, `run.developer`, `iam.serviceAccountUser` on `ledger-fava` |
 
 Local test of the image: see [deploy/cloudflare/README.md](../cloudflare/README.md#local-test)
 (same image).
