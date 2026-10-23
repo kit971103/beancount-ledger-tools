@@ -8,11 +8,11 @@ it is in that repository's `ledger_tools.toml` or in `main.beancount`.
 | package | what | configured by |
 |---|---|---|
 | `ledger_tools.plugin` | beancount plugins: per-person receivables, split-tag legs, contribution room, deferred tax, sole-currency checks, dropping flagged entries or implied prices | `plugin "ledger_tools.plugin.<name>" "{...}"` in `main.beancount`; each module's docstring |
-| `ledger_tools.fava_ext` | fava extensions: a grouped trial balance and a direct-method cash flow statement | `custom "fava-extension" "ledger_tools.fava_ext.<name>"` |
+| `ledger_tools.fava_ext` | fava extensions: a grouped trial balance, a direct-method cash flow statement, and a status page (ledger and tools commits, pull the ledger now) | `custom "fava-extension" "ledger_tools.fava_ext.<name>"` |
 | `ledger_tools.extract` | read-only extractors for Canadian bank/card statements, IBKR Flex exports and CRA notices; each proves its parse against the document's own figures — see [its README](src/ledger_tools/extract/README.md) | `[extract]` in `ledger_tools.toml` |
 | `ledger_tools.fetch` | `ledger-fetch`: you log in, Playwright replays recorded clicks to download exports | `[fetch.login]` |
 | `ledger_tools.prices` | `ledger-prices`: monthly Bank of Canada FX averages as `price` directives | `[prices]` |
-| `deploy/container` | the fava image both deployments build: clones the ledger from GitHub and re-fetches it every 5 minutes, runs `bean-check`, serves `fava --read-only` | `LEDGER_REPO`, `LEDGER_BRANCH`, `GITHUB_TOKEN`, `LEDGER_PULL_INTERVAL` |
+| `deploy/container` | the fava image both deployments build: clones the ledger from GitHub and re-fetches it every 5 minutes (or on demand from the status page), runs `bean-check`, serves `fava --read-only` | `LEDGER_REPO`, `LEDGER_BRANCH`, `GITHUB_TOKEN`, `LEDGER_PULL_INTERVAL`, `LEDGER_TOOLS_COMMIT` |
 | `deploy/gcp` | fava on Cloud Run behind Identity-Aware Proxy, within the free tier | [its README](deploy/gcp/README.md) |
 | `deploy/cloudflare` | fava in a Cloudflare Container, behind Cloudflare Access | [its README](deploy/cloudflare/README.md) |
 

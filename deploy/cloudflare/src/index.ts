@@ -8,6 +8,7 @@ interface Env {
 	LEDGER_REPO: string;   // var: <owner>/<repo>
 	LEDGER_BRANCH: string; // var
 	GITHUB_TOKEN: string;  // secret: read-only token for LEDGER_REPO
+	LEDGER_TOOLS_COMMIT: string; // var, set by `wrangler deploy --var`: shown on fava's Status page
 }
 
 export class Fava extends Container<Env> {
@@ -20,6 +21,7 @@ export class Fava extends Container<Env> {
 			LEDGER_REPO: env.LEDGER_REPO,
 			LEDGER_BRANCH: env.LEDGER_BRANCH,
 			GITHUB_TOKEN: env.GITHUB_TOKEN,
+			LEDGER_TOOLS_COMMIT: env.LEDGER_TOOLS_COMMIT,
 		};
 	}
 }
