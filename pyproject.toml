@@ -1,6 +1,6 @@
 [project]
 name = "beancount-ledger-tools"
-version = "0.2.0"
+version = "0.2.1"
 description = "Beancount plugins, fava extensions and statement extractors for a personal double-entry ledger"
 readme = "README.md"
 license = "MIT"
