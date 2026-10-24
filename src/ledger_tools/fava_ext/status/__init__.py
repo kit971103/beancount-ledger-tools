@@ -3,7 +3,8 @@
 The page shows the ledger's checked-out commit and its commit time, and this
 package's version and commit.  The container image has no `.git`, so there the
 commit comes from `$LEDGER_TOOLS_COMMIT` (set at build or deploy time, see
-deploy/); in an editable install it is read from the repository.
+deploy/); a git install (a ledger pinning a tag) has it in pip's record; in an
+editable install it is read from the repository.
 
     2000-01-01 custom "fava-extension" "ledger_tools.fava_ext.status"
 
@@ -17,6 +18,7 @@ access proxy is in front of it.
 
 from __future__ import annotations
 
+import json
 import os
 import shutil
 import subprocess
@@ -70,13 +72,27 @@ def _head(directory: Path) -> Commit:
     return Commit(commit_hash, time)
 
 
-def _tools_commit() -> str:
-    if commit := os.environ.get("LEDGER_TOOLS_COMMIT"):
-        return commit
-    package = Path(__file__).resolve().parent
+def _installed_commit() -> str:
+    """The commit pip recorded for a git install (PEP 610 direct_url.json), if any."""
     try:
-        commit = _git(package, "rev-parse", "HEAD")
-        dirty = subprocess.run(["git", "-C", str(package), "diff", "--quiet", "HEAD", "--"],
+        direct_url = json.loads(metadata.distribution(DIST).read_text("direct_url.json") or "{}")
+    except (metadata.PackageNotFoundError, ValueError):
+        return ""
+    return direct_url.get("vcs_info", {}).get("commit_id", "")
+
+
+def _tools_commit() -> str:
+    if commit := os.environ.get("LEDGER_TOOLS_COMMIT") or _installed_commit():
+        return commit
+    # An editable install: src/ledger_tools/fava_ext/status/ in this repository.
+    # Installed anywhere else (a .venv inside the ledger), git would find the
+    # enclosing repository and report its commit instead.
+    root = Path(__file__).resolve().parents[4]
+    try:
+        if Path(_git(root, "rev-parse", "--show-toplevel")).resolve() != root:
+            return "unknown"
+        commit = _git(root, "rev-parse", "HEAD")
+        dirty = subprocess.run(["git", "-C", str(root), "diff", "--quiet", "HEAD", "--"],
                                capture_output=True, timeout=10).returncode != 0
     except (OSError, subprocess.SubprocessError):
         return "unknown"
